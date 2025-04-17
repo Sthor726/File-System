@@ -41,6 +41,7 @@ union fs_block
 };
 
 static union fs_block superblock;
+static union fs_block null_block;
 
 /**
  * + Freemap should be allocated in fs_mount (via malloc) 
@@ -102,7 +103,23 @@ void fs_debug()
 
 int fs_format()
 {
-    return 0;
+    // clear all existing data
+    memset(null_block.data, 0, DISK_BLOCK_SIZE);
+
+    for (int i = 0; i < disk_size(); i ++){
+        disk_write(i, null_block.data);
+    }
+    
+    // setup super block
+    superblock.super.magic = FS_MAGIC;
+    superblock.super.nblocks = disk_size();
+    superblock.super.ninodeblocks = NUM_INODE_BLOCKS(superblock.super.nblocks);   // #define NUM_INODE_BLOCKS(disk_size_in_blocks) (1 + (disk_size_in_blocks / 10))
+    superblock.super.ninodes = 0; // no inodes at the start
+
+    // write super blocks
+    disk_write(0, superblock.data);
+
+    return 1;
 }
 
 int fs_mount()
