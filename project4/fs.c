@@ -63,6 +63,41 @@ void fs_debug()
     printf("    %d blocks\n", block.super.nblocks);
     printf("    %d inode blocks\n", block.super.ninodeblocks);
     printf("    %d inodes\n", block.super.ninodes);
+    for (int inode_block_number = 0; inode_block_number < block.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(inode_block_number + 1, block.data);
+        
+        //printf("Inode block number = %d \n", inode_block_number);
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            struct fs_inode inode = block.inode[inode_num_in_block]; 
+            if (inode.isvalid == 1){
+                printf("inode: %d\n", inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
+
+                printf("    size: %d bytes\n", inode.size);
+                printf("    direct blocks: ");
+                for (int direct_index = 0; direct_index < POINTERS_PER_INODE; direct_index++){
+                    if (inode.direct[direct_index] != 0){
+                        printf("%d ", inode.direct[direct_index]);
+                    }
+                }
+                printf("\n");
+                
+                if (inode.indirect != 0){
+                    union fs_block indirect_block;
+                    disk_read(inode.indirect, indirect_block.data);
+
+                    printf("    Indirect block: %d\n", inode.indirect);
+                    printf("    Indirect data blocks: ");
+                    for (int indirect_block_pointer_index = 0; indirect_block_pointer_index < POINTERS_PER_BLOCK; indirect_block_pointer_index ++){
+                        if (indirect_block.pointers[indirect_block_pointer_index] != 0){
+                            printf("%d ", indirect_block.pointers[indirect_block_pointer_index]);
+                        }
+                    }
+                    printf("\n");
+                }
+            }
+        }
+    }
 }
 
 int fs_format()
