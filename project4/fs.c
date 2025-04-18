@@ -200,30 +200,55 @@ int fs_mount()
 
 int fs_unmount()
 {
+// As needed, deallocate any structures allocated when mounting the file
+// system. Returns one on success, zero otherwise.
+
     return 0;
 }
 
 int fs_create()
+// Create a new inode of zero length. On success, return the inumber. On failure,
+// return negative one.
 {
+
     return -1;
 }
 
 int fs_delete(int inumber)
 {
+// Delete the inode indicated by the inumber. Release all data and indirect blocks
+// assigned to this inode and return them to the free block map. On success, return one. On
+// failure, return 0
+
     return 0;
 }
 
 int fs_getsize(int inumber)
 {
+// Return the logical size of the given inode, in bytes. Note that zero is a valid
+// logical size for an inode! On failure, return -1
+
     return -1;
 }
 
 int fs_read(int inumber, char *data, int length, int offset)
 {
+// Read data from a valid inode. Copy "length" bytes from the inode into the
+// "data" pointer, starting at "offset" in the inode. Return the total number of bytes read. The
+// number of bytes actually read could be smaller than the number of bytes requested,
+// perhaps if the end of the inode is reached. If the given inumber is invalid, or any other
+// error is encountered, return 0.
+
     return 0;
 }
 
 int fs_write(int inumber, const char *data, int length, int offset)
 {
+// Write data to a valid inode. Copy "length" bytes from the pointer "data" into
+// the inode starting at "offset" bytes. Allocate any necessary direct and indirect blocks in
+// the process. Return the number of bytes actually written. The number of bytes actually
+// written could be smaller than the number of bytes request, perhaps if the disk becomes
+// full. If the given inumber is invalid, or any other error is encountered, return 0
+
     return 0;
 }
