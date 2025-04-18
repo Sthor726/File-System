@@ -53,12 +53,13 @@ static union fs_block null_block;
  *          printf("Block 123 is NOT free\n");
 */
 static int *freemap = 0;
+static int disk_offset = 0;
 
 void fs_debug()
 {
     union fs_block block;
 
-    disk_read(0, block.data);
+    disk_read(disk_offset + 0, block.data);
 
     printf("superblock:\n");
     printf("    %d blocks\n", block.super.nblocks);
@@ -66,7 +67,7 @@ void fs_debug()
     printf("    %d inodes\n", block.super.ninodes);
     for (int inode_block_number = 0; inode_block_number < block.super.ninodeblocks; inode_block_number++){
         // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
-        disk_read(inode_block_number + 1, block.data);
+        disk_read(disk_offset + inode_block_number + 1, block.data);
         
         //printf("Inode block number = %d \n", inode_block_number);
         for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
@@ -85,7 +86,7 @@ void fs_debug()
                 
                 if (inode.indirect != 0){
                     union fs_block indirect_block;
-                    disk_read(inode.indirect, indirect_block.data);
+                    disk_read(disk_offset + inode.indirect, indirect_block.data);
 
                     printf("    Indirect block: %d\n", inode.indirect);
                     printf("    Indirect data blocks: ");
@@ -124,7 +125,77 @@ int fs_format()
 
 int fs_mount()
 {
-    return 0;
+    union fs_block temp_superblock;
+    int found_magic_num = 0;
+    for (int byte_offset = 0; byte_offset < disk_size(); byte_offset++){ // check all byte offsets to find wher the file system starts
+        disk_read(disk_offset, temp_superblock.data);
+
+        if (temp_superblock.super.magic == FS_MAGIC){
+            printf("found magic number at %d\n", byte_offset);
+            disk_offset = byte_offset;
+            found_magic_num = 1;
+            break;
+        }
+    }
+    if (found_magic_num){
+    superblock = temp_superblock;
+    } else {
+        printf("Could not find magic number on disk\n");
+        return 0;
+    }
+
+
+    // intalise based on the files on disk a free block bitmap
+    freemap = malloc(sizeof(int) * superblock.super.nblocks);
+    memset(freemap, 0, sizeof(freemap));
+    for (int i = 0; i <superblock.super.nblocks; i++){
+        if (freemap[i]){
+            printf("NOT INITALIZED CORRECTLY\n"); //XXXXXXXXXXX
+        }
+    }
+    union fs_block block;
+    for (int inode_block_number = 0; inode_block_number < temp_superblock.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(disk_offset + inode_block_number + 1, block.data);
+        
+        //printf("Inode block number = %d \n", inode_block_number);
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            struct fs_inode inode = block.inode[inode_num_in_block]; 
+            if (inode.isvalid == 1){
+                // printf("inode: %d\n", inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
+                freemap[inode_block_number * INODES_PER_BLOCK + inode_num_in_block] = 1;
+                // printf("    size: %d bytes\n", inode.size);
+                // printf("    direct blocks: ");
+                for (int direct_index = 0; direct_index < POINTERS_PER_INODE; direct_index++){
+                    if (inode.direct[direct_index] != 0){
+                        freemap[inode.direct[direct_index]] = 1;
+                    }
+                }
+                // printf("\n");
+                
+                if (inode.indirect != 0){
+                    union fs_block indirect_block;
+                    disk_read(disk_offset + inode.indirect, indirect_block.data);
+
+                    // printf("    Indirect block: %d\n", inode.indirect);
+                    // printf("    Indirect data blocks: ");
+                    freemap[inode.indirect] = 1;
+                    for (int indirect_block_pointer_index = 0; indirect_block_pointer_index < POINTERS_PER_BLOCK; indirect_block_pointer_index ++){
+                        if (indirect_block.pointers[indirect_block_pointer_index] != 0){
+                            //printf("%d ", indirect_block.pointers[indirect_block_pointer_index]);
+                            freemap[indirect_block.pointers[indirect_block_pointer_index]] = 1;
+                        }
+                    }
+                    //printf("\n");
+                }
+            }
+        }
+    }
+    
+    
+
+
+    return 1;
 }
 
 int fs_unmount()
