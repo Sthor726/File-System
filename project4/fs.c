@@ -203,15 +203,45 @@ int fs_unmount()
 // As needed, deallocate any structures allocated when mounting the file
 // system. Returns one on success, zero otherwise.
 
-    return 0;
+    //deallocate free map
+    if (freemap != NULL) {
+    free(freemap);
+    freemap = NULL;
+    }
+
+    // reset superblock and disk offset in memory
+    memset(&superblock, 0, sizeof(superblock));
+    disk_offset = 0;
+
+    return 1;
 }
 
 int fs_create()
 // Create a new inode of zero length. On success, return the inumber. On failure,
 // return negative one.
 {
+    union fs_block block;
+    for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(disk_offset + inode_block_number + 1, block.data);
+        
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            struct fs_inode inode = block.inode[inode_num_in_block]; 
+            if(inode.isvalid == 0){
+                //inode is free - lets create it here
+                //set values
+                inode.isvalid = 1;
+                inode.size = 0;
+                memset(inode.direct, 0, sizeof(inode.direct));
+                inode.indirect = 0;
 
-    return -1;
+                //write to disk and return inumber
+                disk_write(disk_offset + inode_block_number + 1, block.data);
+                return (inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
+            }
+
+        }
+    }
 }
 
 int fs_delete(int inumber)
