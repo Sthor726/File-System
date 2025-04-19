@@ -226,16 +226,14 @@ int fs_create()
         disk_read(disk_offset + inode_block_number + 1, block.data);
         
         for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
-            struct fs_inode inode = block.inode[inode_num_in_block]; 
-            if(inode.isvalid == 0){
-                //inode is free - lets create it here
-                //set values
-                inode.isvalid = 1;
-                inode.size = 0;
-                memset(inode.direct, 0, sizeof(inode.direct));
-                inode.indirect = 0;
-
-                //write to disk and return inumber
+            struct fs_inode *inode = &block.inode[inode_num_in_block];
+            if (inode->isvalid == 0) {
+                inode->isvalid = 1;
+                inode->size = 0;
+                memset(inode->direct, 0, sizeof(inode->direct));
+                inode->indirect = 0;
+            
+                // Now write back to disk — this contains the modified inode
                 disk_write(disk_offset + inode_block_number + 1, block.data);
                 return (inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
             }
