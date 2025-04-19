@@ -233,7 +233,7 @@ int fs_create()
                 memset(inode->direct, 0, sizeof(inode->direct));
                 inode->indirect = 0;
             
-                // Now write back to disk — this contains the modified inode
+                // write to disk and return inumber
                 disk_write(disk_offset + inode_block_number + 1, block.data);
                 return (inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
             }
