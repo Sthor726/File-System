@@ -239,6 +239,9 @@ int fs_create()
             }
 
         }
+        // no avalable space for inode
+        printf("inode table full, unable to create inode");
+        return -1;
     }
 }
 
@@ -247,7 +250,52 @@ int fs_delete(int inumber)
 // Delete the inode indicated by the inumber. Release all data and indirect blocks
 // assigned to this inode and return them to the free block map. On success, return one. On
 // failure, return 0
+    union fs_block block;
+    for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(disk_offset + inode_block_number + 1, block.data);
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            if (inumber == (inode_block_number * INODES_PER_BLOCK + inode_num_in_block)){
+                struct fs_inode *inode = &block.inode[inode_num_in_block];
+                printf("found inode %d\n", inumber);
+                if(inode->isvalid == 0){
+                    printf("inode %d not found valid\n", inumber);
+                    return 0;
+                }
 
+                // clear direct pointers on freemap
+                for (int i = 0; i < POINTERS_PER_INODE; i++) {
+                    if (inode->direct[i] != 0) {
+                        freemap[inode->direct[i]] = 0;
+                        inode->direct[i] = 0;
+                    }
+                }
+
+                if (inode->indirect != 0) {
+                    union fs_block indirect_pointer;
+                    disk_read(inode->indirect, indirect_pointer.data);
+                    for (int i = 0; i < POINTERS_PER_BLOCK; i++) {
+                        if (indirect_pointer.pointers[i] != 0) {
+                            freemap[indirect_pointer.pointers[i]] = 0;        
+                            indirect_pointer.pointers[i] = 0;
+                        }
+                    }
+                    freemap[inode->indirect] = 0;
+                    inode->indirect = 0;
+                }
+
+
+                // reset state variables
+                inode->isvalid = 0;
+                inode->size = 0;
+                
+                disk_write(disk_offset + inode_block_number + 1, block.data);
+
+                return 1;
+            }
+        }
+    }
+    printf("inode %d not found on disk\n", inumber);
     return 0;
 }
 
@@ -280,3 +328,14 @@ int fs_write(int inumber, const char *data, int length, int offset)
 
     return 0;
 }
+
+// Helper function for loading individual inode structure by number
+void inode_load( int inumber, struct fs_inode *inode ) {
+    return;
+}
+
+// Helper function for saving individual inode structure by number
+void inode_save( int inumber, struct fs_inode *inode ) {
+    return;
+}
+
