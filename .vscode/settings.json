@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "initializer_list": "c",
-        "valarray": "c"
+        "valarray": "c",
+        "fs.h": "c"
     }
 }

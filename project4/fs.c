@@ -243,6 +243,7 @@ int fs_create()
         printf("inode table full, unable to create inode");
         return -1;
     }
+    return -1;
 }
 
 int fs_delete(int inumber)
@@ -303,7 +304,21 @@ int fs_getsize(int inumber)
 {
 // Return the logical size of the given inode, in bytes. Note that zero is a valid
 // logical size for an inode! On failure, return -1
+    union fs_block block;
+    for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(disk_offset + inode_block_number + 1, block.data);
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            if (inumber == (inode_block_number * INODES_PER_BLOCK + inode_num_in_block)){
+                struct fs_inode *inode = &block.inode[inode_num_in_block];
+                printf("found inode %d\n", inumber);
 
+                return inode->size;
+                // this seems to obvious (?)
+
+            }
+        }
+    }
     return -1;
 }
 
@@ -314,7 +329,26 @@ int fs_read(int inumber, char *data, int length, int offset)
 // number of bytes actually read could be smaller than the number of bytes requested,
 // perhaps if the end of the inode is reached. If the given inumber is invalid, or any other
 // error is encountered, return 0.
+    struct fs_inode *inode;
+    inode_load(inumber, inode);
 
+    int block_index = offset / DISK_BLOCK_SIZE;
+    union fs_block block; 
+    if(block_index <= POINTERS_PER_INODE){
+        //data is in direct block
+        int block_offset = offset % DISK_BLOCK_SIZE;
+        if (inode->direct[block_index] != 0) {
+            disk_read(disk_offset + inode->direct[block_index], block.data);
+            memcpy(data, block.data + block_offset, length);
+
+            //still need to figure out how much it ACTUALLY READ
+            return length;
+        }
+
+    } else {
+        //data not in a direct block, check indirect
+        return 0;
+    }
     return 0;
 }
 
@@ -329,13 +363,22 @@ int fs_write(int inumber, const char *data, int length, int offset)
     return 0;
 }
 
-// Helper function for loading individual inode structure by number
 void inode_load( int inumber, struct fs_inode *inode ) {
-    return;
-}
+    union fs_block block;
+    for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
+        // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
+        disk_read(disk_offset + inode_block_number + 1, block.data);
+        for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
+            if (inumber == (inode_block_number * INODES_PER_BLOCK + inode_num_in_block)){
+                printf("found inode %d\n", inumber);
 
-// Helper function for saving individual inode structure by number
-void inode_save( int inumber, struct fs_inode *inode ) {
+                *inode = block.inode[inode_num_in_block];
+
+            }
+        }
+    }
+}
+void inode_save( int inumber, struct fs_inode *inode ){
     return;
 }
 
