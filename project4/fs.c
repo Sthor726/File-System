@@ -393,6 +393,16 @@ int fs_write(int inumber, const char *data, int length, int offset)
 // written could be smaller than the number of bytes request, perhaps if the disk becomes
 // full. If the given inumber is invalid, or any other error is encountered, return 0
 
+    struct fs_inode inode;
+    inode_load(inumber, &inode);
+
+    if (inode.isvalid == 0) {
+        return 0;
+    }
+
+    if (offset >= inode.size) {
+        return 0;
+    }
     return 0;
 }
 
