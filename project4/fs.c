@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
 
@@ -128,7 +129,7 @@ int fs_mount()
     union fs_block temp_superblock;
     int found_magic_num = 0;
     for (int byte_offset = 0; byte_offset < disk_size(); byte_offset++){ // check all byte offsets to find wher the file system starts
-        disk_read(disk_offset, temp_superblock.data);
+        disk_read(byte_offset, temp_superblock.data);
 
         if (temp_superblock.super.magic == FS_MAGIC){
             printf("found magic number at %d\n", byte_offset);
@@ -232,6 +233,9 @@ int fs_create()
                 inode->size = 0;
                 memset(inode->direct, 0, sizeof(inode->direct));
                 inode->indirect = 0;
+                superblock.super.ninodes++;
+                disk_write(0, (const uint8_t *)&superblock);
+
             
                 // write to disk and return inumber
                 disk_write(disk_offset + inode_block_number + 1, block.data);
@@ -239,9 +243,6 @@ int fs_create()
             }
 
         }
-        // no avalable space for inode
-        printf("inode table full, unable to create inode");
-        return -1;
     }
     return -1;
 }
@@ -405,36 +406,42 @@ int fs_write(int inumber, const char *data, int length, int offset)
         has_indirect = 1;
     }
 
+    int first_data_block = 1 + superblock.super.ninodeblocks;
+
     while (bytes_written < length) {
         int block_num = 0;
 
         if (block_index < POINTERS_PER_INODE) {
             // Direct block
             if (inode.direct[block_index] == 0) {
-                // Allocate new block
-                for (int i = 0; i < superblock.super.nblocks; i++) {
+                int found = 0;
+                for (int i = first_data_block; i < superblock.super.nblocks; i++) {
                     if (freemap[i] == 0) {
                         inode.direct[block_index] = i;
                         freemap[i] = 1;
+                        found = 1;
                         break;
                     }
                 }
+                if (!found) break; // No space left
             }
             block_num = inode.direct[block_index];
         } else {
             // Indirect block
             if (inode.indirect == 0) {
-                // Allocate indirect block
-                for (int i = 0; i < superblock.super.nblocks; i++) {
+                int found = 0;
+                for (int i = first_data_block; i < superblock.super.nblocks; i++) {
                     if (freemap[i] == 0) {
                         inode.indirect = i;
                         freemap[i] = 1;
                         memset(indirect_block.data, 0, sizeof(indirect_block.data));
                         disk_write(disk_offset + i, indirect_block.data);
                         has_indirect = 1;
+                        found = 1;
                         break;
                     }
                 }
+                if (!found) break; // No space left
             }
 
             if (!has_indirect) {
@@ -443,14 +450,20 @@ int fs_write(int inumber, const char *data, int length, int offset)
             }
 
             int indirect_index = block_index - POINTERS_PER_INODE;
+            if (indirect_index >= POINTERS_PER_BLOCK) break; // Too big
+
             if (indirect_block.pointers[indirect_index] == 0) {
-                for (int i = 0; i < superblock.super.nblocks; i++) {
+                int found = 0;
+                for (int i = first_data_block; i < superblock.super.nblocks; i++) {
                     if (freemap[i] == 0) {
                         indirect_block.pointers[indirect_index] = i;
                         freemap[i] = 1;
+                        found = 1;
                         break;
                     }
                 }
+                if (!found) break; // No space left
+
                 disk_write(disk_offset + inode.indirect, indirect_block.data);
             }
 
@@ -486,6 +499,7 @@ int fs_write(int inumber, const char *data, int length, int offset)
 
     return bytes_written;
 }
+
 
 void inode_load( int inumber, struct fs_inode *inode ) {
     union fs_block block;

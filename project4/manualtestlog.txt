@@ -1,0 +1,87 @@
+Commands used to test the system and ensure proper handling of edge cases:
+
+-- STARTING SYSTEM --
+
+Input: format
+Expected Output: disk formatted.
+
+Input: mount
+Expected Output: disk mounted.
+
+--- BASIC FUNCTIONALITY ---
+
+Input: create
+Expected Output: created inode 0
+
+Input: getsize 0
+Expected Output: inode 0 has size 0
+
+Input: cat 0
+Expected Output: 0 bytes copied
+
+Input: copyin test2.txt 0
+Expected Output: 
+    3711 bytes copied
+    copied file test2.txt to inode 0
+
+Input: getsize 0
+Expected Output: inode 0 has size 3711
+
+Input: cat 0
+Expected Output: (prints contents of test2.txt)
+
+--- Testing large file ---
+
+Input: create
+Expected Output: created inode 1
+
+Input: copyin test1.txt 1
+Expected Output: 
+    89113 bytes copied
+    copied file test1.txt to inode 1        
+
+Input: getsize 1
+Expected Output: inode 1 has size 89113
+
+Input: cat 1
+Expected Output: (prints contents of test1.txt)
+
+Input: copyout 1 out.txt
+Expected Output: 
+    89113 bytes copied
+    copied inode 1 to file out.txt
+    (out.txt contains contents of test1.txt)
+
+--- Delete and recreate ---
+
+Input: delete 0 
+Expected Output: inode 0 deleted.
+
+Input: create
+Expected Output: created inode 0
+
+--- Out of bounds operations ---
+
+Input: delete 99
+Expected Output: delete failed!
+
+Input: cat 99
+Expected Output: copied 0 bytes!
+
+Input: copyin test1.txt 99
+Expected Output: 0 bytes copied
+
+Input: copyout 99 test1.txt
+Expected Output: 0 bytes copied
+
+--- Exiting ---
+
+Input: exit
+Expected Output:
+    closing emulated disk.
+    148 disk block reads
+    256 disk block writes
+
+
+--- RESULTS ---
+ALL TESTS PASS 05/04 
