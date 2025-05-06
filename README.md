@@ -9,7 +9,7 @@ Samuel Thorson and Luke Lopata
 Our tests cover a wide range<br/>
 Our tests can be found in the script 'project4/testfunctions.sh'. To replicate our testing, run the script with the commands:
 <br/>
-``` make clean; make; ./testfunctions.sh ```
+``` ./testfunctions.sh ```
 <br/> 
 Running this script will automatically run all the tests and print everything to the terminal. If you wish to redirect to a log file use 
 ```./testfunctions.sh | tee log.txt ```
