@@ -259,7 +259,7 @@ int fs_delete(int inumber)
         for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
             if (inumber == (inode_block_number * INODES_PER_BLOCK + inode_num_in_block)){
                 struct fs_inode *inode = &block.inode[inode_num_in_block];
-                printf("found inode %d\n", inumber);
+                //printf("found inode %d\n", inumber);
                 if(inode->isvalid == 0){
                     printf("inode %d not found valid\n", inumber);
                     return 0;
@@ -307,8 +307,10 @@ int fs_getsize(int inumber)
 // logical size for an inode! On failure, return -1
     struct fs_inode inode;
 
-    inode_load(inumber, &inode);
-    printf("loaded inode %d\n", inumber);
+    if (inode_load(inumber, &inode) == -1){
+        return -1;
+    }
+    // printf("loaded inode %d\n", inumber);
     if(inode.isvalid == 0){
         printf("inode %d not valid\n", inumber);
         return -1;
@@ -324,7 +326,9 @@ int fs_read(int inumber, char *data, int length, int offset)
 // perhaps if the end of the inode is reached. If the given inumber is invalid, or any other
 // error is encountered, return 0.
     struct fs_inode inode;
-    inode_load(inumber, &inode);
+    if (inode_load(inumber, &inode) == -1) {
+        return 0;
+    }
 
     if (inode.isvalid == 0) {
         return 0;
@@ -389,7 +393,9 @@ int fs_read(int inumber, char *data, int length, int offset)
 int fs_write(int inumber, const char *data, int length, int offset)
 {
     struct fs_inode inode;
-    inode_load(inumber, &inode);
+    if (inode_load(inumber, &inode)== -1){
+        return -1;
+    }
 
     if (inode.isvalid == 0) {
         return 0;
@@ -501,7 +507,7 @@ int fs_write(int inumber, const char *data, int length, int offset)
 }
 
 
-void inode_load( int inumber, struct fs_inode *inode ) {
+int inode_load( int inumber, struct fs_inode *inode ) {
     union fs_block block;
     for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
         // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
@@ -509,11 +515,16 @@ void inode_load( int inumber, struct fs_inode *inode ) {
         for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
             if (inumber == (inode_block_number * INODES_PER_BLOCK + inode_num_in_block)){
                 *inode = block.inode[inode_num_in_block];
-                return;
+                return 1;
             }
         }
     }
+    // if we make it here the block wasnt found
+    printf("inode_load: inode %d not found\n", inumber);
+    return -1; 
 }
+
+
 void inode_save(int inumber, struct fs_inode *inode) {
     union fs_block block;
 
