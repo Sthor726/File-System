@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #define FS_MAGIC 0xf0f03410
 #define INODES_PER_BLOCK 128
@@ -55,6 +56,8 @@ static union fs_block null_block;
 */
 static int *freemap = 0;
 static int disk_offset = 0;
+
+bool mounted = false; 
 
 void fs_debug()
 {
@@ -126,6 +129,10 @@ int fs_format()
 
 int fs_mount()
 {
+    if (mounted) {
+        printf("File system is already mounted\n");
+        return 1;
+    }
     union fs_block temp_superblock;
     int found_magic_num = 0;
     for (int byte_offset = 0; byte_offset < disk_size(); byte_offset++){ // check all byte offsets to find wher the file system starts
@@ -195,7 +202,7 @@ int fs_mount()
     
     
 
-
+    mounted = true; // set the mounted flag to true
     return 1;
 }
 
@@ -204,6 +211,10 @@ int fs_unmount()
 // As needed, deallocate any structures allocated when mounting the file
 // system. Returns one on success, zero otherwise.
 
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return 0;
+    }
     //deallocate free map
     if (freemap != NULL) {
     free(freemap);
@@ -214,6 +225,7 @@ int fs_unmount()
     memset(&superblock, 0, sizeof(superblock));
     disk_offset = 0;
 
+    mounted = false;
     return 1;
 }
 
@@ -221,6 +233,10 @@ int fs_create()
 // Create a new inode of zero length. On success, return the inumber. On failure,
 // return negative one.
 {
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return -1;
+    }
     union fs_block block;
     for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
         // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
@@ -228,6 +244,12 @@ int fs_create()
         
         for (int inode_num_in_block = 0; inode_num_in_block < INODES_PER_BLOCK; inode_num_in_block++){
             struct fs_inode *inode = &block.inode[inode_num_in_block];
+            if (inode_block_number * INODES_PER_BLOCK + inode_num_in_block > superblock.super.nblocks - superblock.super.ninodeblocks - 1){
+                printf("inode %d is not valid\n", inode_block_number * INODES_PER_BLOCK + inode_num_in_block);
+                return -1;
+
+
+            }
             if (inode->isvalid == 0) {
                 inode->isvalid = 1;
                 inode->size = 0;
@@ -249,6 +271,10 @@ int fs_create()
 
 int fs_delete(int inumber)
 {
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return 0;
+    }
 // Delete the inode indicated by the inumber. Release all data and indirect blocks
 // assigned to this inode and return them to the free block map. On success, return one. On
 // failure, return 0
@@ -303,6 +329,10 @@ int fs_delete(int inumber)
 
 int fs_getsize(int inumber)
 {
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return -1;
+    }
 // Return the logical size of the given inode, in bytes. Note that zero is a valid
 // logical size for an inode! On failure, return -1
     struct fs_inode inode;
@@ -320,6 +350,10 @@ int fs_getsize(int inumber)
 
 int fs_read(int inumber, char *data, int length, int offset)
 {
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return 0;
+    }
 // Read data from a valid inode. Copy "length" bytes from the inode into the
 // "data" pointer, starting at "offset" in the inode. Return the total number of bytes read. The
 // number of bytes actually read could be smaller than the number of bytes requested,
@@ -392,12 +426,18 @@ int fs_read(int inumber, char *data, int length, int offset)
 
 int fs_write(int inumber, const char *data, int length, int offset)
 {
+    if (!mounted) {
+        printf("File system is not mounted\n");
+        return 0;
+    }
     struct fs_inode inode;
     if (inode_load(inumber, &inode)== -1){
-        return -1;
+        printf("inode %d not found\n", inumber);
+        return 0;
     }
 
     if (inode.isvalid == 0) {
+        printf("inode %d not valid.\n", inumber);
         return 0;
     }
 

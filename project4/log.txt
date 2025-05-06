@@ -1,0 +1,293 @@
+rm -f simplefs disk.o fs.o shell.o
+/usr/bin/gcc -Wall shell.c -c -o shell.o -g
+/usr/bin/gcc -Wall fs.c -c -o fs.o -g
+/usr/bin/gcc -Wall disk.c -c -o disk.o -g
+/usr/bin/gcc shell.o fs.o disk.o -o simplefs
+------------------------
+testing all functions
+------------------------
+opened emulated disk image test.img with 50 blocks
+ simplefs> Commands are:
+    format
+    mount
+    unmount
+    debug
+    create
+    delete  <inode>
+    getsize <inode>
+    cat     <inode>
+    copyin  <file> <inode>
+    copyout <inode> <file>
+    help
+    quit
+    exit
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    50 blocks
+    6 inode blocks
+    0 inodes
+ simplefs> created inode 0
+ simplefs> created inode 1
+ simplefs> inode 0 has size 0
+ simplefs> inode 1 has size 0
+ simplefs> inode 2 not valid
+getsize failed!
+ simplefs> 33 bytes copied
+copied file input.txt to inode 0
+ simplefs> 33 bytes copied
+copied inode 0 to file output.txt
+ simplefs> superblock:
+    50 blocks
+    6 inode blocks
+    2 inodes
+inode: 0
+    size: 33 bytes
+    direct blocks: 7 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+ simplefs> FILES FILES FILES. SO MANY FILES
+33 bytes copied
+ simplefs> inode 1 deleted.
+ simplefs> inode 999 not found on disk
+delete failed!
+ simplefs> inode 40 not found valid
+delete failed!
+ simplefs> inode_load: inode 999 not found
+getsize failed!
+ simplefs> inode 40 not valid
+getsize failed!
+ simplefs> 0 bytes copied
+copied inode 1 to file noinode.txt
+ simplefs> disk unmounted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    50 blocks
+    6 inode blocks
+    2 inodes
+inode: 0
+    size: 33 bytes
+    direct blocks: 7 
+ simplefs> closing emulated disk.
+52 disk block reads
+58 disk block writes
+
+--- Output Comparison ---
+PASS: Files match!
+-------------------------
+tesing all functions complete
+-------------------------
+------------------------
+stress testing create
+------------------------
+opened emulated disk image test.img with 3 blocks
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    3 blocks
+    1 inode blocks
+    0 inodes
+ simplefs> created inode 0
+ simplefs> created inode 1
+ simplefs> inode 2 is not valid
+create failed!
+ simplefs> inode 2 is not valid
+create failed!
+ simplefs> inode 2 is not valid
+create failed!
+ simplefs> superblock:
+    3 blocks
+    1 inode blocks
+    2 inodes
+inode: 0
+    size: 0 bytes
+    direct blocks: 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+ simplefs> disk unmounted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    3 blocks
+    1 inode blocks
+    2 inodes
+inode: 0
+    size: 0 bytes
+    direct blocks: 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+ simplefs> closing emulated disk.
+15 disk block reads
+8 disk block writes
+-------------------------
+stress testing create complete
+-------------------------
+-------------------------
+test mounting and unmounting
+-------------------------
+opened emulated disk image test.img with 50 blocks
+ simplefs> Could not find magic number on disk
+mount failed!
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> created inode 0
+ simplefs> created inode 1
+ simplefs> disk unmounted.
+ simplefs> superblock:
+    50 blocks
+    6 inode blocks
+    2 inodes
+inode: 0
+    size: 0 bytes
+    direct blocks: 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+ simplefs> File system is not mounted
+getsize failed!
+ simplefs> File system is not mounted
+create failed!
+ simplefs> File system is not mounted
+getsize failed!
+ simplefs> closing emulated disk.
+61 disk block reads
+55 disk block writes
+-------------------------
+test mounting and unmounting complete
+-------------------------
+-------------------------
+test invalid disk image
+-------------------------
+opened emulated disk image invalid.img with 10 blocks
+ simplefs> Could not find magic number on disk
+mount failed!
+ simplefs> File system is not mounted
+closing emulated disk.
+10 disk block reads
+0 disk block writes
+-------------------------
+test invalid disk image
+-------------------------
+-------------------------
+test zero lenght R/W
+-------------------------
+opened emulated disk image test.img with 50 blocks
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> created inode 0
+ simplefs> couldn't open zeroin.txt: No such file or directory
+copy failed!
+ simplefs> 0 bytes copied
+copied inode 1 to file zeroout.txt
+ simplefs> inode 1 not valid
+getsize failed!
+ simplefs> closing emulated disk.
+10 disk block reads
+53 disk block writes
+Zero-length read/write behaves correctly.
+-------------------------
+test zero lenght R/W complete
+-------------------------
+-------------------------
+test large files
+-------------------------
+opened emulated disk image test.img with 100 blocks
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    100 blocks
+    11 inode blocks
+    0 inodes
+ simplefs> created inode 0
+ simplefs> created inode 1
+ simplefs> inode 0 has size 0
+ simplefs> inode 1 has size 0
+ simplefs> created inode 2
+ simplefs> 32768 bytes copied
+copied file large_input.txt to inode 2
+ simplefs> 32768 bytes copied
+copied inode 2 to file large_output.txt
+ simplefs> inode 2 has size 32768
+ simplefs> superblock:
+    100 blocks
+    11 inode blocks
+    3 inodes
+inode: 0
+    size: 0 bytes
+    direct blocks: 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+inode: 2
+    size: 32768 bytes
+    direct blocks: 12 13 14 15 16 
+    Indirect block: 17
+    Indirect data blocks: 18 19 20 
+ simplefs> disk unmounted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    100 blocks
+    11 inode blocks
+    3 inodes
+inode: 0
+    size: 0 bytes
+    direct blocks: 
+inode: 1
+    size: 0 bytes
+    direct blocks: 
+inode: 2
+    size: 32768 bytes
+    direct blocks: 12 13 14 15 16 
+    Indirect block: 17
+    Indirect data blocks: 18 19 20 
+ simplefs> closing emulated disk.
+64 disk block reads
+121 disk block writes
+
+--- Verifying Outputs ---
+Large file matches (indirect block handling works).
+-------------------------
+test large files complete
+-------------------------
+-------------------------
+test large file that deosnt fit
+-------------------------
+opened emulated disk image test.img with 10 blocks
+ simplefs> disk formatted.
+ simplefs> found magic number at 0
+disk mounted.
+ simplefs> superblock:
+    10 blocks
+    2 inode blocks
+    0 inodes
+ simplefs> unknown command: #
+type 'help' for a list of commands.
+ simplefs> created inode 0
+ simplefs> WARNING: fs_write only wrote 8192 bytes, not 16384 bytes
+24576 bytes copied
+copied file large_input.txt to inode 0
+ simplefs> 24576 bytes copied
+copied inode 0 to file large_output.txt
+ simplefs> inode 0 has size 24576
+ simplefs> superblock:
+    10 blocks
+    2 inode blocks
+    1 inodes
+inode: 0
+    size: 24576 bytes
+    direct blocks: 3 4 5 6 7 
+    Indirect block: 8
+    Indirect data blocks: 9 
+ simplefs> closing emulated disk.
+32 disk block reads
+23 disk block writes
