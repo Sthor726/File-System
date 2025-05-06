@@ -25,13 +25,13 @@ struct fs_superblock
     int ninodes;      // Number of dedicated inodes
 };
 
-struct fs_inode
-{
-    int isvalid;                    // 1 if valid (in use), 0 otherwise
-    int size;                       // Size of file in bytes
-    int direct[POINTERS_PER_INODE]; // Direct data block numbers (0 if invalid)
-    int indirect;                   // Indirect data block number (0 if invalid)
-};
+// struct fs_inode
+// {
+//     int isvalid;                    // 1 if valid (in use), 0 otherwise
+//     int size;                       // Size of file in bytes
+//     int direct[POINTERS_PER_INODE]; // Direct data block numbers (0 if invalid)
+//     int indirect;                   // Indirect data block number (0 if invalid)
+// };
 
 union fs_block
 {
@@ -148,7 +148,7 @@ int fs_mount()
 
     // intalise based on the files on disk a free block bitmap
     freemap = malloc(sizeof(int) * superblock.super.nblocks);
-    memset(freemap, 0, sizeof(freemap));
+    memset(freemap, 0, sizeof(int) * superblock.super.nblocks);
     for (int i = 0; i <superblock.super.nblocks; i++){
         if (freemap[i]){
             printf("NOT INITALIZED CORRECTLY\n"); //XXXXXXXXXXX
@@ -234,7 +234,7 @@ int fs_create()
                 memset(inode->direct, 0, sizeof(inode->direct));
                 inode->indirect = 0;
                 superblock.super.ninodes++;
-                disk_write(0, (const uint8_t *)&superblock);
+                disk_write(0, (const char *)&superblock);
 
             
                 // write to disk and return inumber

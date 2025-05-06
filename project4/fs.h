@@ -1,6 +1,17 @@
 #ifndef FS_H
 #define FS_H
 
+
+#define POINTERS_PER_INODE 5
+
+struct fs_inode
+{
+    int isvalid;                    // 1 if valid (in use), 0 otherwise
+    int size;                       // Size of file in bytes
+    int direct[POINTERS_PER_INODE]; // Direct data block numbers (0 if invalid)
+    int indirect;                   // Indirect data block number (0 if invalid)
+};
+
 // Print debug information about the file system. Also a great location to
 // assert file system invariants
 void fs_debug();
@@ -43,6 +54,9 @@ int fs_read(int inumber, char *data, int length, int offset);
 // Returns bytes written (> 0) on success and 0 on failure
 int fs_write(int inumber, const char *data, int length, int offset);
 
+void inode_load( int inumber, struct fs_inode *inode );
+
+void inode_save(int inumber, struct fs_inode *inode);
 
 
 #endif
