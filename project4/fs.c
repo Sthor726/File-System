@@ -270,14 +270,15 @@ int fs_create()
 }
 
 int fs_delete(int inumber)
+// Delete the inode indicated by the inumber. Release all data and indirect blocks
+// assigned to this inode and return them to the free block map. On success, return one. On
+// failure, return 0
 {
     if (!mounted) {
         printf("File system is not mounted\n");
         return 0;
     }
-// Delete the inode indicated by the inumber. Release all data and indirect blocks
-// assigned to this inode and return them to the free block map. On success, return one. On
-// failure, return 0
+
     union fs_block block;
     for (int inode_block_number = 0; inode_block_number < superblock.super.ninodeblocks; inode_block_number++){
         // read the inode block. This will have INODES_PER_BLOCK inodes wihtin it 
@@ -329,12 +330,13 @@ int fs_delete(int inumber)
 
 int fs_getsize(int inumber)
 {
+// Return the logical size of the given inode, in bytes. Note that zero is a valid
+// logical size for an inode! On failure, return -1
     if (!mounted) {
         printf("File system is not mounted\n");
         return -1;
     }
-// Return the logical size of the given inode, in bytes. Note that zero is a valid
-// logical size for an inode! On failure, return -1
+
     struct fs_inode inode;
 
     if (inode_load(inumber, &inode) == -1){
@@ -350,15 +352,17 @@ int fs_getsize(int inumber)
 
 int fs_read(int inumber, char *data, int length, int offset)
 {
+    // Read data from a valid inode. Copy "length" bytes from the inode into the
+    // "data" pointer, starting at "offset" in the inode. Return the total number of bytes read. The
+    // number of bytes actually read could be smaller than the number of bytes requested,
+    // perhaps if the end of the inode is reached. If the given inumber is invalid, or any other
+    // error is encountered, return 0.
+    
     if (!mounted) {
         printf("File system is not mounted\n");
         return 0;
     }
-// Read data from a valid inode. Copy "length" bytes from the inode into the
-// "data" pointer, starting at "offset" in the inode. Return the total number of bytes read. The
-// number of bytes actually read could be smaller than the number of bytes requested,
-// perhaps if the end of the inode is reached. If the given inumber is invalid, or any other
-// error is encountered, return 0.
+
     struct fs_inode inode;
     if (inode_load(inumber, &inode) == -1) {
         return 0;
