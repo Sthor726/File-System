@@ -11,3 +11,6 @@ Our tests can be found in the script 'project4/testfunctions.sh'. To replicate o
 <br/>
 ``` make clean; make; ./testfunctions.sh ```
 <br/> 
+Running this script will automatically run all the tests and print everything to the terminal. If you wish to redirect to a log file use 
+''' ./testfunctions.sh | tee log.txt '''
+All output of the edge case checking can be found in this file.
