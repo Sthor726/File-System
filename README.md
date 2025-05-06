@@ -6,7 +6,7 @@ Samuel Thorson and Luke Lopata
 - Follows the guidelines provided in the project 4 writeup.
 
 ## Testing ##
-Our tests cover a wide range
+Our tests cover a wide range<br/>
 Our tests can be found in the script 'project4/testfunctions.sh'. To replicate our testing, run the script with the commands:
 <br/>
 ``` make clean; make; ./testfunctions.sh ```
