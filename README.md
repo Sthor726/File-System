@@ -11,6 +11,6 @@ Samuel Thorson and Luke Lopata
 <br/>
 ``` ./testfunctions.sh ```
 <br/> 
-- Running this script will automatically run all the tests and print everything to the terminal. If you wish to redirect to a log file use 
+Running this script will automatically run all the tests and print everything to the terminal. If you wish to redirect to a log file use 
 ```./testfunctions.sh | tee log.txt ```
 - All outputs of the edge case checking can be found in this file.
